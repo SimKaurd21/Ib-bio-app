@@ -1,0 +1,16 @@
+#Python
+__pycache__/
+*.pyc
+venv/
+
+# Node
+node_modules/
+
+#macOS
+.DS_Store
+
+#Enviornment Variables
+#.env
+
+# Vite build output
+dist/
