@@ -14,3 +14,6 @@ node_modules/
 
 # Vite build output
 dist/
+
+#SQLite database files
+back-end/ib_biology.db
