@@ -1,9 +1,16 @@
 <script setup>
-  import FlashcardSession from './components/FlashCardSession.vue'
-  import SignupForm from './components/SignupForm.vue'
+  import { ref } from 'vue'
+  import AuthPage from './components/AuthPage.vue'
+  import FlashCardSession from './components/FlashCardSession.vue'
+  const loggedIn = ref(false)
 </script>
 
 <template>
-  <SignupForm />
-  <FlashcardSession />
+  <AuthPage 
+  v-if="!loggedIn" 
+  @loginSuccess="loggedIn = true"
+  />
+  <FlashCardSession
+    v-else
+  />
 </template>
