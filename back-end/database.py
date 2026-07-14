@@ -11,6 +11,15 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """)
 
+conn.execute("""
+CREATE TABLE IF NOT EXISTS review_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    card_id INTEGER NOT NULL,
+    UNIQUE(user_id, card_id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+""")
 conn.commit()
 conn.close()
 

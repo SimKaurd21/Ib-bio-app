@@ -1,12 +1,15 @@
 <template>
-  <SignupForm />
   <div class="container">
     <h1>IB Biology Recall</h1>
 
     <div v-if="sessionComplete">
       <h2>Session Complete!</h2>
-      <p>You have reviewed {{ cards.length }} cards.</p>
-
+      <p>You have reviewed {{ studyCards.length }} cards.</p>
+      <p>You marked {{ reviewedCards.length }} cards for review.</p>
+      <button v-if="reviewedCards.length > 0"
+        @click="reviewMarkedCards">
+        Review Marked Cards
+      </button>
       <button @click="restartSession">
         Restart Session
       </button>
@@ -30,7 +33,9 @@
       </button>
 
     </div>
-      <h2>{{ currentCard.question }}</h2>
+      <div class="question-box">
+        <h2>{{ currentCard.question }}</h2>
+      </div>
 
       <textarea 
       v-model="userAnswer"
@@ -38,9 +43,10 @@
       rows="6">
       </textarea>
 
-      <p v-if="showAnswer">
-        {{ currentCard.answer }}
-      </p>
+      <div v-if="showAnswer" class="answer-box">
+        <h3>Answer</h3>
+        <p>{{ currentCard.answer }}</p>
+      </div>
 
       <div class="button-row">
       <button @click="prevCard" class="prev-button">
@@ -55,8 +61,15 @@
           Next Card
         </button> 
        </div>
+       <div class="progress-bar">
+        <div
+          class="progress-fill"
+            :style="{ width: ((currentIndex + 1) / studyCards.length) * 100 + '%' }"
+        ></div>
+        </div>
+
        <p class="progress">
-        Card {{ currentIndex + 1 }} of {{ cards.length }}
+        Card {{ currentIndex + 1 }} of {{ studyCards.length }}
        </p>
     </div>
     </Transition>
@@ -65,32 +78,57 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { cards } from '../data/cards'
+import { 
+  saveReview,
+  getReviewCards,
+  deleteReviewCard
+} from '../services/api'
 
 const showAnswer = ref(false)
-
 const currentIndex = ref(0)
-
 const userAnswer = ref('')
-
-const currentCard = ref(cards[currentIndex.value])
-
-const reviewCards = ref([])
-
+const studyCards = ref(cards)
+const currentCard = ref(studyCards.value[currentIndex.value])
 const sessionComplete = ref(false)
+
+const reviewedCards = ref([])
+
+const props = defineProps({
+  userId: {
+    type: Number,
+    required: true
+  }
+})
+
+async function loadReviewCards() {
+  try {
+    const data = await getReviewCards(props.userId)
+
+    studyCards.value.forEach(card => {
+      if (data.review_cards.includes(card.id)) {
+        card.markedForReview = true
+        reviewedCards.value.push(card.id)
+      }
+    })
+
+  } catch (error) {
+    console.error(error.message)
+  }
+}
 
 function nextCard() {
   showAnswer.value = false
   userAnswer.value = ''
   currentIndex.value++
 
-  if (currentIndex.value >= cards.length) {
+  if (currentIndex.value >= studyCards.value.length) {
     sessionComplete.value = true
     return
   }
 
-  currentCard.value = cards[currentIndex.value]
+  currentCard.value = studyCards.value[currentIndex.value]
 }
 
 function prevCard() {
@@ -99,15 +137,38 @@ function prevCard() {
   currentIndex.value--
 
   if (currentIndex.value < 0) {
-    currentIndex.value = cards.length - 1
+    currentIndex.value = studyCards.value.length - 1
   }
 
-  currentCard.value = cards[currentIndex.value]
+  currentCard.value = studyCards.value[currentIndex.value]
 }
 
-function markForReview(){
-  currentCard.value.markedForReview =
-  !currentCard.value.markedForReview
+async function markForReview() {
+  const id = currentCard.value.id
+  currentCard.value.markedForReview = !currentCard.value.markedForReview
+
+  if (currentCard.value.markedForReview) {
+
+    if (!reviewedCards.value.includes(id)) {
+      reviewedCards.value.push(id)
+
+      try {
+        await saveReview(props.userId, id)
+      } catch (error) {
+        console.error(error.message)
+      }
+    }
+  } else {
+    reviewedCards.value = reviewedCards.value.filter(
+    cardId => cardId !== id
+  )
+
+  try {
+    await deleteReviewCard(props.userId, id)
+  } catch (error) {
+    console.error(error.message)
+  }
+  }
 }
 
 function toggleAnswer() {
@@ -115,9 +176,27 @@ function toggleAnswer() {
 }
 
 function restartSession() {
+  studyCards.value = cards
   sessionComplete.value = false
   currentIndex.value = 0
-  currentCard.value = cards[0]
+  currentCard.value = studyCards.value[0]
+  showAnswer.value = false
+  userAnswer.value = ''
 }
 
+function reviewMarkedCards() { 
+  studyCards.value = cards.filter(card =>
+    reviewedCards.value.includes(card.id)
+  )
+
+  sessionComplete.value = false
+  currentIndex.value = 0
+  currentCard.value = studyCards.value[0]
+  showAnswer.value = false
+  userAnswer.value = ''
+}
+
+onMounted(() => {
+  loadReviewCards()
+})
 </script>
