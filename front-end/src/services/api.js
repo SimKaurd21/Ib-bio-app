@@ -88,3 +88,36 @@ export async function deleteReviewCard(userId, cardId) {
 
    return data
 }
+
+export async function saveUserAnswer(userId, cardId, answerText) {
+   const response = await fetch(`${API_URL}/user_answers`, {
+      method: 'POST',
+      headers: {
+         'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+         user_id: userId,
+         card_id: cardId,
+         answer: answerText
+      })
+   })
+
+   const data = await response.json()
+
+   if (!response.ok) {
+      throw new Error(data.message)
+   }
+
+   return data
+}
+
+export async function getUserAnswers(userId, cardId) {
+   const response = await fetch(`${API_URL}/user_answers/${userId}/${cardId}`)
+   
+   const data = await response.json()
+   if (!response.ok) {
+      throw new Error(data.message)
+   }
+
+   return data
+}

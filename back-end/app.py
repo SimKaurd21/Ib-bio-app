@@ -126,5 +126,63 @@ def delete_review_card(user_id, card_id):
         "message": "Review card removed"
     }
 
+@app.route("/user_answers", methods=["POST"])
+def save_user_answer():
+    data = request.get_json()
+
+    user_id = data["user_id"]
+    card_id = data["card_id"]
+    answer = data["answer"]
+
+    conn = sqlite3.connect('ib_biology.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO user_answers (user_id, card_id, answer_text)
+            VALUES (?, ?, ?)
+            """,
+            (user_id, card_id, answer)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError: 
+        cursor.execute(
+            """
+            UPDATE user_answers
+            SET answer_text = ?
+            WHERE user_id = ? AND card_id = ?
+            """,
+            (answer, user_id, card_id)
+        )
+        conn.commit()
+
+    conn.close()
+    return {"message": "User answer saved"}
+
+@app.route("/user_answers/<int:user_id>/<card_id>", methods=["GET"])
+def get_user_answer(user_id, card_id):
+    conn = sqlite3.connect("ib_biology.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT answer_text
+        FROM user_answers
+        WHERE user_id = ? AND card_id = ?
+        """,
+        (user_id, card_id)
+    )
+
+    answer = cursor.fetchone()
+    conn.close()
+
+    if answer:
+        return {
+            "answer": answer[0]
+        }, 200
+    else:
+        return {
+            "message": "No answer found"
+        }, 404
+
 if __name__ == "__main__":
     app.run(debug=True)

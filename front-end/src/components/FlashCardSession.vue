@@ -1,66 +1,37 @@
 <template>
   <div class="container">
     <h1>IB Biology Recall</h1>
+    <button @click="logout">
+      Log Out
+    </button>
+    <button @click="goHome">
+      Go Home
+    </button>
 
-    <div v-if="sessionComplete">
-      <h2>Session Complete!</h2>
-      <p>You have reviewed {{ studyCards.length }} cards.</p>
-      <p>You marked {{ reviewedCards.length }} cards for review.</p>
-      <button v-if="reviewedCards.length > 0"
-        @click="reviewMarkedCards">
-        Review Marked Cards
-      </button>
-      <button @click="restartSession">
-        Restart Session
-      </button>
-    </div>
+    <SessionComplete
+      v-if="sessionComplete"
+      :totalCards="studyCards.length"
+      :reviewedCount="reviewedCards.length"
+      @reviewMarkedCards="reviewMarkedCards"
+      @restartSession="restartSession"
+    />
 
     <div v-else>
     <Transition name="slide" mode="out-in">
 
-    <div class="card" :key="currentCard.id">
+       <FlashCard
+        :key="currentCard.id"
+        :currentCard="currentCard"
+        :showAnswer="showAnswer"
+        :userAnswer="userAnswer"
 
-      <div class="review">
-
-      <p class="topic-title">{{ currentCard.topic }}</p>
-
-      <button @click="markForReview">
-        {{
-          currentCard.markedForReview
-          ? 'Unmark for Review'
-          : 'Mark for Review'
-        }}
-      </button>
-
-    </div>
-      <div class="question-box">
-        <h2>{{ currentCard.question }}</h2>
-      </div>
-
-      <textarea 
-      v-model="userAnswer"
-      placeholder="Type your answer here..."
-      rows="6">
-      </textarea>
-
-      <div v-if="showAnswer" class="answer-box">
-        <h3>Answer</h3>
-        <p>{{ currentCard.answer }}</p>
-      </div>
-
-      <div class="button-row">
-      <button @click="prevCard" class="prev-button">
-          Previous Card
-        </button>
-
-        <button @click="toggleAnswer">
-         {{ showAnswer ? 'Hide Answer' : 'Reveal Answer' }}
-        </button>
-
-        <button @click="nextCard" class="next-button">
-          Next Card
-        </button> 
-       </div>
+        @nextCard="nextCard"
+        @prevCard="prevCard"
+        @toggleAnswer="toggleAnswer"
+        @markForReview="markForReview"
+        @update:userAnswer="userAnswer = $event"/>
+    
+    </Transition>
        <div class="progress-bar">
         <div
           class="progress-fill"
@@ -72,8 +43,6 @@
         Card {{ currentIndex + 1 }} of {{ studyCards.length }}
        </p>
     </div>
-    </Transition>
-  </div>
   </div>
 </template>
 
@@ -83,8 +52,12 @@ import { cards } from '../data/cards'
 import { 
   saveReview,
   getReviewCards,
-  deleteReviewCard
+  deleteReviewCard,
+  saveUserAnswer,
+  getUserAnswers
 } from '../services/api'
+import SessionComplete from "./SessionComplete.vue"
+import FlashCard from "./FlashCard.vue"
 
 const showAnswer = ref(false)
 const currentIndex = ref(0)
@@ -99,10 +72,26 @@ const props = defineProps({
   userId: {
     type: Number,
     required: true
+  },
+  reviewMode: {
+    type: Boolean,
+    default: false
   }
 })
 
+const emit = defineEmits(["logout", "goHome"])
+
+function logout() {
+  localStorage.removeItem("userId")
+  emit("logout")
+}
+
+function goHome() {
+  emit("goHome")
+}
+
 async function loadReviewCards() {
+  reviewedCards.value = []
   try {
     const data = await getReviewCards(props.userId)
 
@@ -118,22 +107,27 @@ async function loadReviewCards() {
   }
 }
 
-function nextCard() {
+async function nextCard() {
+  await saveUserAnswer(
+    props.userId,
+    currentCard.value.id,
+    userAnswer.value
+  )
+
   showAnswer.value = false
-  userAnswer.value = ''
   currentIndex.value++
 
   if (currentIndex.value >= studyCards.value.length) {
     sessionComplete.value = true
     return
   }
-
   currentCard.value = studyCards.value[currentIndex.value]
+  await loadUserAnswer()
 }
 
-function prevCard() {
+async function prevCard() {
   showAnswer.value = false
-  userAnswer.value = ''
+
   currentIndex.value--
 
   if (currentIndex.value < 0) {
@@ -141,6 +135,8 @@ function prevCard() {
   }
 
   currentCard.value = studyCards.value[currentIndex.value]
+
+  await loadUserAnswer()
 }
 
 async function markForReview() {
@@ -175,16 +171,23 @@ function toggleAnswer() {
   showAnswer.value = !showAnswer.value
 }
 
-function restartSession() {
+async function restartSession() {
   studyCards.value = cards
   sessionComplete.value = false
   currentIndex.value = 0
   currentCard.value = studyCards.value[0]
   showAnswer.value = false
-  userAnswer.value = ''
+
+  await loadUserAnswer()
 }
 
-function reviewMarkedCards() { 
+async function reviewMarkedCards() { 
+
+  if (reviewedCards.value.length === 0) {
+    alert("You haven't marked any cards for review yet.")
+    return
+  }
+
   studyCards.value = cards.filter(card =>
     reviewedCards.value.includes(card.id)
   )
@@ -193,10 +196,40 @@ function reviewMarkedCards() {
   currentIndex.value = 0
   currentCard.value = studyCards.value[0]
   showAnswer.value = false
-  userAnswer.value = ''
+
+  await loadUserAnswer()
 }
 
-onMounted(() => {
-  loadReviewCards()
+onMounted(async () => {
+  await loadReviewCards()
+
+  if (props.reviewMode) {
+    studyCards.value = cards.filter(card =>
+      reviewedCards.value.includes(card.id)
+    )
+  } else {
+    studyCards.value = cards
+  }
+
+  currentIndex.value = 0
+  currentCard.value = studyCards.value[0]
+
+  await loadUserAnswer()
 })
+
+async function loadUserAnswer() {
+  try {
+    const data = await getUserAnswers(
+      props.userId,
+      currentCard.value.id
+    )
+
+    userAnswer.value = data.answer
+
+  } catch (error) {
+    // If no answer exists yet, keep textarea empty
+    userAnswer.value = ''
+    console.error(error.message)
+  }
+}
 </script>

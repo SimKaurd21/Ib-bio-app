@@ -11,7 +11,14 @@ print("\nReview Cards:")
 cursor.execute("SELECT * FROM review_cards")
 rows = cursor.fetchall()
 
+print("\nAnswers:")
+cursor.execute("SELECT * FROM user_answers")
+meow = cursor.fetchall()
+
 for row in rows:
     print(row)
+
+for meows in meow:
+    print(meows)
 
 conn.close()
