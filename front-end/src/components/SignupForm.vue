@@ -4,21 +4,28 @@ import { registerUser } from '../services/api'
 const email = ref('')
 const password = ref('')
 const message = ref('')
+const loading = ref(false)
 const emit = defineEmits(['switchToLogin'], ['loginSuccess'])
 
 async function handleRegister() {
-    try { 
-        const data = await registerUser(
-        email.value,
-        password.value
-        )
-        console.log(data)
-        message.value = data.message
-        emit('loginSuccess')
-    } catch (error) {
-        message.value = error.message
-    }
-    
+  loading.value = true
+  try {
+    const data = await registerUser(
+      email.value,
+      password.value
+    )
+    localStorage.setItem(
+      "userId",
+      data.user_id
+    )
+
+    emit("loginSuccess", data.user_id)
+  } catch(error) {
+    message.value = error.message
+
+  } finally {
+    loading.value = false
+  }
 }
 
 </script>
@@ -53,8 +60,9 @@ async function handleRegister() {
       <button
         class="primary-button"
         @click="handleRegister"
+        :disabled="loading"
       >
-        Create Account
+        {{ loading ? "Creating account..." : "Sign Up" }}
       </button>
 
       <p class="message">

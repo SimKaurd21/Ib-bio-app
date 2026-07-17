@@ -1,24 +1,22 @@
-import sqlite3
+from db import get_db_connection
 
-conn = sqlite3.connect("ib_biology.db")
+conn = get_db_connection()
 cursor = conn.cursor()
 
 print("Users:")
 cursor.execute("SELECT * FROM users")
-print(cursor.fetchall())
+for row in cursor.fetchall():
+    print(row)
 
 print("\nReview Cards:")
 cursor.execute("SELECT * FROM review_cards")
-rows = cursor.fetchall()
+for row in cursor.fetchall():
+    print(row)
 
 print("\nAnswers:")
 cursor.execute("SELECT * FROM user_answers")
-meow = cursor.fetchall()
-
-for row in rows:
+for row in cursor.fetchall():
     print(row)
 
-for meows in meow:
-    print(meows)
-
+cursor.close()
 conn.close()

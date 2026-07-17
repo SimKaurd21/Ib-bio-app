@@ -4,6 +4,7 @@
     const email = ref('')
     const password = ref('')
     const message = ref('')
+    const loading = ref(false)
     const emit = defineEmits([
       'switchToSignup',
       'loginSuccess'
@@ -18,6 +19,9 @@ async function handleLogin() {
    } catch (error) {
       message.value = error.message
    }
+   finally {
+   loading.value = false
+  }
 }
 </script>
 
@@ -51,8 +55,9 @@ async function handleLogin() {
 
       <button
         class="primary-button"
-        @click="handleLogin">
-        Log In
+        @click="handleLogin"
+        :disabled="loading">
+        {{ loading ? "Logging in..." : "Log In" }}
       </button>
 
       <p class="message">

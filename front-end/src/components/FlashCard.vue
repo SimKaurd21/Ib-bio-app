@@ -43,8 +43,9 @@
       <button
         class="next-button"
         @click="$emit('nextCard')"
+        :disabled="saving"
       >
-        Next Card
+        {{ saving ? "Saving..." : "Next Card" }}
       </button>
     </div>
   </div>
@@ -54,7 +55,8 @@
 defineProps({
   currentCard: Object,
   showAnswer: Boolean,
-  userAnswer: String
+  userAnswer: String,
+  saving: Boolean
 })
 
 defineEmits([

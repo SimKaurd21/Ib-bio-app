@@ -1,12 +1,33 @@
 <template>
   <div class="container">
-    <h1>IB Biology Recall</h1>
-    <button @click="logout">
-      Log Out
-    </button>
-    <button @click="goHome">
-      Go Home
-    </button>
+    <div v-if="loading" class='loading-screen'>
+    <div class="spinner"></div>
+      <h2>Loading your flashcards...</h2>
+      <p>Preparing your study session...</p>
+  </div>
+
+  <div v-else-if="errorMessage" class="error-screen">
+      <h2>Something went wrong</h2>
+      <p>{{ errorMessage }}</p>
+
+      <button @click="window.location.reload()">
+       Try Again
+      </button>
+  </div>
+      <div class="Top-buttons">
+        <button @click="logout">
+          Log Out
+        </button>
+        <button @click="goHome">
+          Go Home
+        </button>
+      </div>
+    <p v-if="saving" class="saving">
+      Saving...
+    </p>
+    <p v-if="savedMessage" class="saved">
+      Saved ✓
+    </p>
 
     <SessionComplete
       v-if="sessionComplete"
@@ -24,6 +45,7 @@
         :currentCard="currentCard"
         :showAnswer="showAnswer"
         :userAnswer="userAnswer"
+        :saving="saving"
 
         @nextCard="nextCard"
         @prevCard="prevCard"
@@ -65,6 +87,10 @@ const userAnswer = ref('')
 const studyCards = ref(cards)
 const currentCard = ref(studyCards.value[currentIndex.value])
 const sessionComplete = ref(false)
+const loading = ref(true)
+const errorMessage = ref('')
+const saving = ref(false)
+const savedMessage = ref(false)
 
 const reviewedCards = ref([])
 
@@ -108,12 +134,27 @@ async function loadReviewCards() {
 }
 
 async function nextCard() {
-  await saveUserAnswer(
-    props.userId,
-    currentCard.value.id,
-    userAnswer.value
-  )
+   saving.value = true
+   savedMessage.value = false
 
+  try {
+    await saveUserAnswer(
+      props.userId,
+      currentCard.value.id,
+      userAnswer.value
+    )
+
+    savedMessage.value = true
+    setTimeout(() => {
+      savedMessage.value = false
+    }, 2000)
+
+  } catch(error) {
+    errorMessage.value = "Could not save answer."
+
+  } finally {
+    saving.value = false
+  }
   showAnswer.value = false
   currentIndex.value++
 
@@ -201,20 +242,28 @@ async function reviewMarkedCards() {
 }
 
 onMounted(async () => {
-  await loadReviewCards()
+  try {
+    await loadReviewCards()
 
-  if (props.reviewMode) {
-    studyCards.value = cards.filter(card =>
-      reviewedCards.value.includes(card.id)
-    )
-  } else {
-    studyCards.value = cards
+    if (props.reviewMode) {
+      studyCards.value = cards.filter(card =>
+        reviewedCards.value.includes(card.id)
+      )
+    } else {
+      studyCards.value = cards
+    }
+
+    currentIndex.value = 0
+    currentCard.value = studyCards.value[0]
+
+    await loadUserAnswer()
+
+  } catch (error) {
+    errorMessage.value = "Unable to load your study session."
+
+  } finally {
+    loading.value = false
   }
-
-  currentIndex.value = 0
-  currentCard.value = studyCards.value[0]
-
-  await loadUserAnswer()
 })
 
 async function loadUserAnswer() {
@@ -233,3 +282,56 @@ async function loadUserAnswer() {
   }
 }
 </script>
+<style scoped>
+.loading-screen {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.loading-screen h2 {
+  margin-top: 20px;
+  font-size: 1.8rem;
+}
+
+.loading-screen p {
+  margin-top: 8px;
+  color: #666;
+}
+
+.spinner {
+  width: 45px;
+  height: 45px;
+  border: 5px solid #d8f3dc;
+  border-top: 5px solid #2d6a4f;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+.saving,
+.saved {
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+.saved {
+  color: #2d6a4f;
+}
+.top-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+</style>
