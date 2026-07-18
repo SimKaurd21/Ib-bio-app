@@ -13,8 +13,12 @@ def home():
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-    email = data["email"]
-    password = data["password"]
+
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return {"message": "Email and password are required."}, 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,9 +51,14 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
+    
     data = request.get_json()
-    email = data["email"]
-    password = data["password"]
+
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return {"message": "Email and password are required."}, 400
 
     conn = get_db_connection()
     cursor = conn.cursor()

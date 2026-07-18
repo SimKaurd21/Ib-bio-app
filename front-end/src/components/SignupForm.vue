@@ -38,12 +38,13 @@ async function handleRegister() {
       <p class="subtitle">
         Master IB Biology using active recall.
       </p>
-
+      <form @submit.prevent="handleRegister">
       <div class="input-group">
         <label>Email</label>
         <input
           v-model="email"
           type="email"
+          required
           placeholder="Enter your email"
         />
       </div>
@@ -53,13 +54,14 @@ async function handleRegister() {
         <input
           v-model="password"
           type="password"
+          required
           placeholder="Create a password"
         />
       </div>
 
       <button
+        type="submit"
         class="primary-button"
-        @click="handleRegister"
         :disabled="loading"
       >
         {{ loading ? "Creating account..." : "Sign Up" }}
@@ -75,6 +77,7 @@ async function handleRegister() {
       >
         Already have an account?
       </button>
+      </form>
     </div>
   </div>
 </template>

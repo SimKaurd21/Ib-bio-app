@@ -34,12 +34,13 @@ async function handleLogin() {
       <p class="subtitle">
         Welcome back! Continue mastering IB Biology.
       </p>
-
+      <form @submit.prevent="handleLogin">
       <div class="input-group">
         <label>Email</label>
         <input
           v-model="email"
           type="email"
+          required
           placeholder="Enter your email"
         />
       </div>
@@ -49,13 +50,15 @@ async function handleLogin() {
         <input
           v-model="password"
           type="password"
+          required
           placeholder="Enter your password"
         />
       </div>
 
       <button
+        type="submit"
         class="primary-button"
-        @click="handleLogin"
+    
         :disabled="loading">
         {{ loading ? "Logging in..." : "Log In" }}
       </button>
@@ -69,6 +72,7 @@ async function handleLogin() {
         @click="emit('switchToSignup')">
         Don't have an account? Sign up
     </button>
+  </form>
     </div>
   </div>
 </template>
