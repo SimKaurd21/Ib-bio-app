@@ -4,6 +4,7 @@ import AuthPage from './components/AuthPage.vue'
 import FlashCardSession from './components/FlashCardSession.vue'
 import Dashboard from './components/Dashboard.vue'
 import { getReviewCards } from './services/api'
+import { Analytics } from "@vercel/analytics/vue"
 
 const loggedIn = ref(false)
 const userId = ref(null)
