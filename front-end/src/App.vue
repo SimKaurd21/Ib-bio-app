@@ -28,6 +28,7 @@ function handleLogout() {
 async function startReviewSession() {
   try {
     const data = await getReviewCards(userId.value)
+    console.log(data.review_cards)
 
     if (data.review_cards.length === 0) {
       alert("You don't have any cards marked for review yet.")

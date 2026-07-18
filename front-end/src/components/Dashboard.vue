@@ -2,6 +2,19 @@
     <div>
         <h1>Dashboard</h1>
         <p>Welcome to your dashboard!</p>
+        <p>This flashcard app is adapted from the biologyforlife IB Biology syllabus 
+          structure and used with permission from the creator. The goal of this tool is 
+          to help students organize their notes and practice active recall through an 
+          interactive flashcard format.  
+
+          The answers provided are designed as quick review references and does not include 
+          the depth of explanation needed for full IB Biology preparation. For more detailed 
+          explanations and comprehensive study materials, please refer to <a
+          href="https://www.biologyforlife.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >biologyforlife</a>
+           and other IB Biology resources.</p>
 
         <button @click="$emit('startSession')">
             Start New Session
@@ -44,6 +57,7 @@ p {
   color: #6b7280;
   font-size: 1.1rem;
   margin-bottom: 35px;
+  text-align: center;
 }
 
 button {

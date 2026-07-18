@@ -70,7 +70,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { cards } from '../data/cards'
+import {cards} from '../data/cards'
 import { 
   saveReview,
   getReviewCards,
@@ -122,10 +122,11 @@ async function loadReviewCards() {
     const data = await getReviewCards(props.userId)
 
     studyCards.value.forEach(card => {
-      if (data.review_cards.includes(card.id)) {
-        card.markedForReview = true
-        reviewedCards.value.push(card.id)
-      }
+      card.markedForReview = data.review_cards.includes(card.id)
+
+      if (card.markedForReview) {
+      reviewedCards.value.push(card.id)
+    }
     })
 
   } catch (error) {
@@ -254,8 +255,13 @@ onMounted(async () => {
     }
 
     currentIndex.value = 0
-    currentCard.value = studyCards.value[0]
 
+    if (studyCards.value.length === 0) {
+      loading.value = false
+      return
+    }
+
+    currentCard.value = studyCards.value[0]
     await loadUserAnswer()
 
   } catch (error) {
@@ -278,7 +284,9 @@ async function loadUserAnswer() {
   } catch (error) {
     // If no answer exists yet, keep textarea empty
     userAnswer.value = ''
-    console.error(error.message)
+    if (error.message !== "No answer found") {
+      console.error(error.message)
+    }
   }
 }
 </script>
