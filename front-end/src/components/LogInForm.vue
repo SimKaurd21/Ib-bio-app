@@ -7,21 +7,27 @@
     const loading = ref(false)
     const emit = defineEmits([
       'switchToSignup',
-      'loginSuccess'
+      'loginSuccess',
+      'authLoading'
     ])
 
 async function handleLogin() {
+   loading.value = true
+   emit('authLoading', true)
+
    try {
       const result = await loginUser(email.value, password.value)
-      emit('loginSuccess', result.user_id)
 
+      emit('loginSuccess', result.user_id)
       message.value = result.message
+
    } catch (error) {
       message.value = error.message
    }
    finally {
-   loading.value = false
-  }
+      loading.value = false
+      emit('authLoading', false)
+   }
 }
 </script>
 

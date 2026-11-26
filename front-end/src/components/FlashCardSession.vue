@@ -37,23 +37,21 @@
       @restartSession="restartSession"
     />
 
-    <div v-else>
-    <Transition name="slide" mode="out-in">
-
-       <FlashCard
-        :key="currentCard.id"
-        :currentCard="currentCard"
-        :showAnswer="showAnswer"
-        :userAnswer="userAnswer"
-        :saving="saving"
-
-        @nextCard="nextCard"
-        @prevCard="prevCard"
-        @toggleAnswer="toggleAnswer"
-        @markForReview="markForReview"
-        @update:userAnswer="userAnswer = $event"/>
-    
-    </Transition>
+    <div v-else-if="currentCard">
+      <Transition name="slide" mode="out-in">
+        <FlashCard
+          :key="currentCard.id"
+          :currentCard="currentCard"
+          :showAnswer="showAnswer"
+          :userAnswer="userAnswer"
+          :saving="saving"
+          @nextCard="nextCard"
+          @prevCard="prevCard"
+          @toggleAnswer="toggleAnswer"
+          @markForReview="markForReview"
+          @update:userAnswer="userAnswer = $event"
+        />
+      </Transition>
        <div class="progress-bar">
         <div
           class="progress-fill"
@@ -70,7 +68,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import {cards} from '../data/cards'
+import {allCards} from '../data/decks'
 import { 
   saveReview,
   getReviewCards,
@@ -84,8 +82,8 @@ import FlashCard from "./FlashCard.vue"
 const showAnswer = ref(false)
 const currentIndex = ref(0)
 const userAnswer = ref('')
-const studyCards = ref(cards)
-const currentCard = ref(studyCards.value[currentIndex.value])
+const studyCards = ref([])
+const currentCard = ref(null)
 const sessionComplete = ref(false)
 const loading = ref(true)
 const errorMessage = ref('')
@@ -102,6 +100,10 @@ const props = defineProps({
   reviewMode: {
     type: Boolean,
     default: false
+  },
+  deck: {
+    type: Object,
+    default: null
   }
 })
 
@@ -118,15 +120,16 @@ function goHome() {
 
 async function loadReviewCards() {
   reviewedCards.value = []
+
   try {
     const data = await getReviewCards(props.userId)
 
-    studyCards.value.forEach(card => {
+    allCards.forEach(card => {
       card.markedForReview = data.review_cards.includes(card.id)
 
       if (card.markedForReview) {
-      reviewedCards.value.push(card.id)
-    }
+        reviewedCards.value.push(card.id)
+      }
     })
 
   } catch (error) {
@@ -214,7 +217,9 @@ function toggleAnswer() {
 }
 
 async function restartSession() {
-  studyCards.value = cards
+  studyCards.value = props.reviewMode
+  ? allCards
+  : props.deck.cards
   sessionComplete.value = false
   currentIndex.value = 0
   currentCard.value = studyCards.value[0]
@@ -230,9 +235,8 @@ async function reviewMarkedCards() {
     return
   }
 
-  studyCards.value = cards.filter(card =>
-    reviewedCards.value.includes(card.id)
-  )
+  studyCards.value = (props.reviewMode ? allCards : props.deck.cards)
+  .filter(card => reviewedCards.value.includes(card.id))
 
   sessionComplete.value = false
   currentIndex.value = 0
@@ -247,11 +251,11 @@ onMounted(async () => {
     await loadReviewCards()
 
     if (props.reviewMode) {
-      studyCards.value = cards.filter(card =>
+      studyCards.value = allCards.filter(card =>
         reviewedCards.value.includes(card.id)
       )
     } else {
-      studyCards.value = cards
+      studyCards.value = props.deck.cards
     }
 
     currentIndex.value = 0

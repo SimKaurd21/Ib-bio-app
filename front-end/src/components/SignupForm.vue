@@ -5,15 +5,22 @@ const email = ref('')
 const password = ref('')
 const message = ref('')
 const loading = ref(false)
-const emit = defineEmits(['switchToLogin'], ['loginSuccess'])
+const emit = defineEmits([
+  'switchToLogin',
+  'loginSuccess',
+  'authLoading'
+])
 
 async function handleRegister() {
   loading.value = true
+  emit('authLoading', true)
+
   try {
     const data = await registerUser(
       email.value,
       password.value
     )
+
     localStorage.setItem(
       "userId",
       data.user_id
@@ -25,6 +32,7 @@ async function handleRegister() {
 
   } finally {
     loading.value = false
+    emit('authLoading', false)
   }
 }
 
@@ -72,6 +80,7 @@ async function handleRegister() {
       </p>
 
       <button
+        type="button"
         class="text-button"
         @click="emit('switchToLogin')"
       >
